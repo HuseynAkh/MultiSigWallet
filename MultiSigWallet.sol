@@ -30,11 +30,16 @@ contract Wallet {
         _;
     }
 
+    event TransferReqCreated(uint _id, uint _amount, address _sender, address _receiver);
+    event TransferUserApproved(uint _id, uint _approvals, address _user);
+    event TransferFullApproved(uint _id);
+
 
     constructor(address[] memory _owners, uint _minApproval){
         owners = _owners;
         minApproval = _minApproval;
     }
+
 
     function deposit() public payable{
         //Keep empty
@@ -42,6 +47,7 @@ contract Wallet {
 
     function transfer(uint _amount, address payable _receiver) public onlyOwners{
         transferReq.push( Transfer(_amount, _receiver, 0, false, transferReq.length) );
+        emit TransferReqCreated(transferReq.length, _amount, msg.sender, _receiver);
     }
 
     function approve(uint _id) public onlyOwners{
@@ -51,9 +57,12 @@ contract Wallet {
         approvals[msg.sender][_id] = true;
         transferReq[_id].approvals++;
 
+        emit TransferUserApproved(_id, transferReq[_id].approvals, msg.sender);
+
         if(transferReq[_id].approvals >= minApproval){
             transferReq[_id].receiver.transfer(transferReq[_id].amount);
             transferReq[_id].isSent = true;
+            emit TransferFullApproved(_id);
         }
     }
 
